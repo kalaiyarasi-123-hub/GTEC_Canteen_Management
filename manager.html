@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>University Canteen - Manager View</title>
+<style>
+body{
+  font-family:Arial;
+  margin:0;
+  background:#f9f9f9
+}
+
+/* TOP BAR */
+header.navbar{
+  background:#007bff;
+  color:#fff;
+  padding:18px;
+  text-align:center;
+  font-size:22px;
+  position:sticky;
+  top:0;
+  z-index:1000
+}
+
+/* ORDERS BUTTON */
+.orders-btn{
+  position:absolute;
+  right:18px;
+  top:14px;
+  background:#fff;
+  color:#007bff;
+  border:none;
+  padding:7px 14px;
+  border-radius:7px;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:14px;
+}
+
+/* PAGE WIDTH */
+.container{
+  padding:22px;
+  max-width:850px;
+  margin:auto
+}
+
+/* SECTION TITLE */
+h2{
+  background:#eee;
+  padding:10px;
+  border-radius:9px;
+  font-size:19px;
+}
+
+/* FOOD CARD */
+.menu-item{
+  display:flex;
+  align-items:center;
+  background:#fff;
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,.12)
+}
+
+/* IMAGE */
+.item-image{
+  width:75px;
+  height:75px;
+  object-fit:cover;
+  border-radius:8px;
+  margin-right:14px
+}
+
+/* TEXT */
+.item-details{
+  flex:1;
+  font-size:16px;
+}
+
+/* BUTTON */
+.availability-btn{
+  padding:6px 12px;
+  border:none;
+  border-radius:7px;
+  cursor:pointer;
+  color:#fff;
+  font-size:13px;
+}
+
+.available{background:green}
+.not-available{background:red}
+</style>
+</head>
+<body>
+
+<header class="navbar">
+GTEC CANTEEN - Manager View
+<button class="orders-btn" onclick="location.href='/orders'">Orders List</button>
+</header>
+
+<div class="container">
+<div id="menuContent"></div>
+</div>
+
+<script>
+/* ✅ FIXED ORDER */
+const sectionOrder = ["Breakfast", "Morning Break", "Lunch", "Afternoon Break", "Dinner"];
+
+let menuData = JSON.parse(localStorage.getItem("menuData")) || {
+  "Breakfast":[
+    {id:"1",name:"Idly",price:20,available:true,image_url:"/static/images/idly_sambar.webp"},
+    {id:"2",name:"Medu Vada",price:15,available:true,image_url:"/static/images/medu_vada.jpg"},
+    {id:"3",name:"Masala Dosa",price:35,available:true,image_url:"/static/images/masala_dosa.jpg"},
+    {id:"4",name:"Poori",price:30,available:true,image_url:"/static/images/poori.jpg"}
+  ],
+  "Morning Break":[
+    {id:"5",name:"Samosa",price:10,available:true,image_url:"/static/images/samosa.jpg"},
+    {id:"6",name:"Tea",price:8,available:true,image_url:"/static/images/tea.jpg"},
+    {id:"7",name:"Coffee",price:12,available:true,image_url:"/static/images/coffee.jpg"},
+    {id:"8",name:"Cutlet",price:20,available:false,image_url:"/static/images/cutlet.jpg"}
+  ],
+  "Lunch":[
+    {id:"9",name:"Veg Meals",price:70,available:true,image_url:"/static/images/veg_meals.jpg"},
+    {id:"10",name:"Sambar Satham",price:40,available:true,image_url:"/static/images/sambar_satham.jpg"},
+    {id:"11",name:"Curd Rice",price:35,available:true,image_url:"/static/images/curd_rice.jpg"},
+    {id:"12",name:"Vegetable Rice",price:60,available:true,image_url:"/static/images/vegetable_rice.jpg"}
+  ],
+  "Afternoon Break":[
+    {id:"13",name:"Samosa",price:10,available:true,image_url:"/static/images/samosa.jpg"},
+    {id:"14",name:"Tea",price:8,available:true,image_url:"/static/images/tea.jpg"},
+    {id:"15",name:"Coffee",price:12,available:true,image_url:"/static/images/coffee.jpg"},
+    {id:"16",name:"Cutlet",price:20,available:false,image_url:"/static/images/cutlet.jpg"}
+  ],
+  "Dinner":[
+    {id:"17",name:"Dosa",price:30,available:true,image_url:"/static/images/dosai.jpg"},
+    {id:"18",name:"Chapathi",price:40,available:true,image_url:"/static/images/chappathi.jpg"},
+    {id:"19",name:"Veg Meals",price:70,available:true,image_url:"/static/images/veg_meals.jpg"},
+    {id:"20",name:"Idly & Sambar",price:25,available:true,image_url:"/static/images/idly_sambar.webp"}
+  ]
+};
+
+function save(){
+  localStorage.setItem("menuData",JSON.stringify(menuData));
+}
+
+function renderMenu(){
+  const menu=document.getElementById("menuContent");
+  menu.innerHTML="";
+
+  /* ✅ ORDER FIX HERE */
+  sectionOrder.forEach(sec=>{
+    if(!menuData[sec]) return;
+
+    let s=document.createElement("div");
+    s.className="section";
+    s.innerHTML=`<h2>${sec}</h2>`;
+
+    menuData[sec].forEach(i=>{
+      s.innerHTML+=`
+      <div class="menu-item">
+        <img src="${i.image_url}" class="item-image" onerror="this.src='/static/images/gtec_logo.jpeg'">
+        <div class="item-details">
+          <b>${i.name}</b><br>
+          Price: Rs <input type="number" value="${i.price}"
+          onchange="updatePrice('${sec}','${i.id}',this.value)">
+          <br>
+          <button class="availability-btn ${i.available?'available':'not-available'}"
+          onclick="toggleAvailability('${sec}','${i.id}',this)">
+          ${i.available?'Available':'Not Available'}
+          </button>
+        </div>
+      </div>`;
+    });
+
+    menu.appendChild(s);
+  });
+}
+
+function updatePrice(sec,id,val){
+  menuData[sec].find(i=>i.id===id).price=parseInt(val);
+  save();
+}
+
+function toggleAvailability(sec,id,btn){
+  let item=menuData[sec].find(i=>i.id===id);
+  item.available=!item.available;
+  btn.textContent=item.available?'Available':'Not Available';
+  btn.className=`availability-btn ${item.available?'available':'not-available'}`;
+  save();
+}
+
+renderMenu();
+</script>
+
+</body>
+</html>

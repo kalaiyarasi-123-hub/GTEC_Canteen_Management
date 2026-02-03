@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Daily Orders</title>
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:20px}
+.date-box{background:#007bff;color:#fff;padding:10px;border-radius:8px;margin-top:20px;}
+.order{background:#fff;padding:12px;border-radius:10px;margin-top:10px}
+.items{margin-left:15px;font-size:14px}
+.no-orders{margin-top:10px;color:#555}
+.collapsible{background:#ccc;color:#000;padding:10px;border-radius:6px;cursor:pointer;margin-top:10px;}
+.content{display:none;padding:0 15px;max-height:0;overflow:hidden;transition:max-height 0.3s ease-out;}
+</style>
+</head>
+
+<body>
+<h2>Daily Orders</h2>
+<div id="orders"></div>
+
+<script>
+function renderOrders() {
+    const div = document.getElementById("orders"); 
+    let orders = JSON.parse(localStorage.getItem("canteenOrders")) || [];
+
+    let d = new Date(); 
+    let day = String(d.getDate()).padStart(2,'0'); 
+    let month = String(d.getMonth()+1).padStart(2,'0'); 
+    let year = d.getFullYear(); 
+    let today = `${day}-${month}-${year}`;
+    let todayNum = `${day}${month}${year}`;
+
+    let todayOrders = orders.filter(o => o.date === today); 
+    let olderOrders = orders.filter(o => o.date !== today); 
+
+    div.innerHTML = `<div class="date-box">Today's Orders: ${today}</div>`;
+
+    if(todayOrders.length === 0){
+        div.innerHTML += `<div class="no-orders">No orders for today</div>`;
+    } else {
+        todayOrders.forEach((o,index)=>{
+            if(!o.orderId || !o.orderId.includes(todayNum)){
+                let orderNumber = String(index+1).padStart(2,'0');
+                o.orderId = `${todayNum}-${orderNumber}`;
+            }
+            let itemsHTML = ""; 
+            (o.items || []).forEach(i => { itemsHTML += `<li>${i.name} x ${i.quantity}</li>`; });
+            div.innerHTML += `
+            <div class="order">
+                <b>Order ID:</b> ${o.orderId}<br>
+                <b>Total:</b> Rs ${o.total}<br>
+                <b>Status:</b> ${o.status}
+                <ul class="items">${itemsHTML}</ul>
+            </div>`;
+        });
+    }
+
+    if(olderOrders.length > 0){
+        div.innerHTML += `<div class="collapsible">Previous Orders (${olderOrders.length})</div><div class="content" id="olderOrders"></div>`;
+        const olderDiv = document.getElementById("olderOrders");
+        olderOrders.forEach(o=>{
+            let itemsHTML = ""; 
+            (o.items || []).forEach(i => { itemsHTML += `<li>${i.name} x ${i.quantity}</li>`; });
+            olderDiv.innerHTML += `
+            <div class="order">
+                <b>Order ID:</b> ${o.orderId}<br>
+                <b>Date:</b> ${o.date}<br>
+                <b>Total:</b> Rs ${o.total}<br>
+                <b>Status:</b> ${o.status}
+                <ul class="items">${itemsHTML}</ul>
+            </div>`;
+        });
+
+        document.querySelector(".collapsible").onclick = function(){
+            this.classList.toggle("active");
+            let content = this.nextElementSibling;
+            content.style.display = (content.style.display === "block") ? "none" : "block";
+        }
+    }
+}
+
+renderOrders();
+setInterval(renderOrders, 2000);
+</script>
+</body>
+</html>

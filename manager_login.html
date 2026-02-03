@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Manager Login</title>
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #f2f2f2;
+}
+
+/* MAIN CARD */
+.container{
+  background: #ffffff;
+  padding: 60px 60px;
+  width: 440px;
+  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* LOGO */
+.container img{
+  width: 200px;
+  margin-bottom: 30px;
+}
+
+/* TITLE */
+.container h2{
+  font-size: 22px;
+  margin-bottom: 25px;
+  letter-spacing: 1px;
+}
+
+/* INPUT */
+.container input{
+  width: 80%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+/* BUTTON */
+.btn{
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  background: #28a745; /* green */
+}
+
+.btn:hover{
+  opacity: 0.9;
+}
+
+/* ERROR */
+.error{
+  color: red;
+  margin-top: 10px;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ✅ College Logo -->
+  <img src="{{ url_for('static', filename='images/gtec_logo.jpeg') }}" alt="GTEC Logo">
+
+  <h2>Manager Login</h2>
+
+  <form method="POST">
+    <input type="password" name="password" placeholder="Enter Password" required>
+    <button class="btn" type="submit">Login</button>
+  </form>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+</div>
+
+</body>
+</html>
