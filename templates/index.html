@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GTEC Canteen</title>
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #fafafa, #fafafa);
+}
+
+/* MAIN CARD */
+.container{
+  background: #ffffff;
+  padding: 80px 90px;          /* VERY BIG CARD */
+  width: 620px;                /* VERY BIG WIDTH */
+  text-align: center;
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+}
+
+/* LOGO */
+.container img{
+  width: 220px;                /* VERY BIG LOGO */
+  margin-bottom: 30px;
+}
+
+/* TITLE */
+.container h2{
+  font-size: 36px;             /* VERY BIG TITLE */
+  margin-bottom: 45px;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+/* BUTTONS */
+.btn{
+  display: inline-block;
+  width: 200px;                /* VERY BIG BUTTONS */
+  padding: 18px 0;
+  margin: 15px;
+  font-size: 20px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.student{
+  background: #007bff;
+}
+
+.manager{
+  background: #28a745;
+}
+
+.btn:hover{
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ✅ College Logo -->
+  <img src="{{ url_for('static', filename='images/gtec_logo.jpeg') }}" alt="GTEC Logo">
+  
+  <h2>GTEC CANTEEN</h2>
+
+  <!-- ✅ Buttons -->
+  <a href="/student">
+    <button class="btn student">Student</button>
+  </a>
+
+  <a href="{{ url_for('manager_login') }}">
+    <button class="btn manager">Manager</button>
+  </a>
+
+</div>
+
+</body>
+</html>

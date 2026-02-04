@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>University Canteen - Student View</title>
+<style>
+body { font-family: Arial; margin:0; background:#f9f9f9; }
+header.navbar { background:#007bff; color:#fff; padding:15px; text-align:center; font-size:20px; }
+.container { padding:20px; max-width:1000px; margin:auto; }
+.section { margin-bottom:30px; }
+h2 { background:#eee; padding:8px; border-radius:8px; }
+.menu-grid { display:flex; gap:12px; overflow-x:auto; padding:10px 0; }
+.menu-item { flex:0 0 200px; display:flex; flex-direction:column; align-items:center; background:#fff; border-radius:10px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.item-image { width:100%; height:120px; object-fit:cover; border-radius:6px; margin-bottom:8px; }
+.item-name { font-weight:bold; text-align:center; margin-bottom:4px; }
+.item-price { color:green; text-align:center; margin-bottom:4px; }
+.status-available { color:green; font-size:12px; text-align:center; margin-bottom:4px; }
+.status-unavailable { color:red; font-size:12px; text-align:center; margin-bottom:4px; }
+.controls { display:flex; gap:5px; justify-content:center; }
+.controls button { background:#007bff; color:#fff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; }
+.controls button:disabled { background:gray; cursor:not-allowed; }
+#cart { background:#fff; padding:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); margin-top:20px; }
+#prebookBtn,#payBtn { background:#28a745; color:#fff; border:none; padding:10px 20px; border-radius:8px; margin-top:15px; cursor:pointer; }
+#paymentSection { display:none; text-align:center; }
+#upiQRCode { width:200px; height:200px; margin-top:10px; }
+.menu-grid::-webkit-scrollbar { height:6px; }
+.menu-grid::-webkit-scrollbar-thumb { background:#ccc; border-radius:3px; }
+.menu-grid::-webkit-scrollbar-track { background:#f0f0f0; }
+</style>
+</head>
+<body>
+
+<header class="navbar">GTEC CANTEEN</header>
+
+<div class="container">
+  <div id="menuContent"></div>
+
+  <div id="cart">
+    <h2>Cart</h2>
+    <ul id="cartItems"></ul>
+    <h3>Total: Rs <span id="totalAmount">0</span></h3>
+    <button id="prebookBtn" disabled onclick="preBook()">Pre-book Now</button>
+
+    <div id="paymentSection">
+      <p>Pay using UPI QR:</p>
+      <img id="upiQRCode" src="{{ url_for('static', filename='images/my_gpay_qr.jpeg') }}">
+      <br>
+      <button id="payBtn" onclick="confirmPayment()">Payment Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const sectionOrder = ["Breakfast", "Morning Break", "Lunch", "Afternoon Break", "Dinner"];
+
+let menuData = JSON.parse(localStorage.getItem("menuData"));
+
+if(!menuData || Object.keys(menuData).length !== sectionOrder.length){
+  menuData = {
+    "Breakfast":[
+      {id:"1",name:"Idly",price:20,available:true,image_url:"/static/images/idly_sambar.webp"},
+      {id:"2",name:"Medu Vada",price:15,available:true,image_url:"/static/images/medu_vada.jpg"},
+      {id:"3",name:"Masala Dosa",price:35,available:true,image_url:"/static/images/masala_dosa.jpg"},
+      {id:"4",name:"Poori",price:30,available:true,image_url:"/static/images/poori.jpg"}
+    ],
+    "Morning Break":[
+      {id:"5",name:"Samosa",price:10,available:true,image_url:"/static/images/samosa.jpg"},
+      {id:"6",name:"Tea",price:8,available:true,image_url:"/static/images/tea.jpg"},
+      {id:"7",name:"Coffee",price:12,available:true,image_url:"/static/images/coffee.jpg"},
+      {id:"8",name:"Cutlet",price:20,available:false,image_url:"/static/images/cutlet.jpg"}
+    ],
+    "Lunch":[
+      {id:"9",name:"Veg Meals",price:70,available:true,image_url:"/static/images/veg_meals.jpg"},
+      {id:"10",name:"Sambar Rice",price:40,available:true,image_url:"/static/images/sambar_satham.jpg"},
+      {id:"11",name:"Curd Rice",price:35,available:true,image_url:"/static/images/curd_rice.jpg"},
+      {id:"12",name:"Veg Fried Rice",price:60,available:true,image_url:"/static/images/vegetable_rice.jpg"}
+    ],
+    "Afternoon Break":[
+      {id:"13",name:"Samosa",price:10,available:true,image_url:"/static/images/samosa.jpg"},
+      {id:"14",name:"Tea",price:8,available:true,image_url:"/static/images/tea.jpg"},
+      {id:"15",name:"Coffee",price:12,available:true,image_url:"/static/images/coffee.jpg"},
+      {id:"16",name:"Cutlet",price:20,available:false,image_url:"/static/images/cutlet.jpg"}
+    ],
+    "Dinner":[
+      {id:"17",name:"Dosa",price:30,available:true,image_url:"/static/images/dosai.jpg"},
+      {id:"18",name:"Chapathi",price:40,available:true,image_url:"/static/images/chappathi.jpg"},
+      {id:"19",name:"Veg Meals",price:70,available:true,image_url:"/static/images/veg_meals.jpg"},
+      {id:"20",name:"Idly & Sambar",price:25,available:true,image_url:"/static/images/idly_sambar.webp"}
+    ]
+  };
+  localStorage.setItem("menuData", JSON.stringify(menuData));
+}
+
+let cart = [];
+
+function renderMenu(){
+  const menuContent = document.getElementById("menuContent");
+  menuContent.innerHTML = "";
+
+  sectionOrder.forEach(section => {
+    let s = document.createElement("div");
+    s.className = "section";
+    s.innerHTML = `<h2>${section}</h2><div class="menu-grid"></div>`;
+    let grid = s.querySelector(".menu-grid");
+
+    menuData[section].forEach(i => {
+      let itemInCart = cart.find(ci => ci.id === i.id);
+      let qty = itemInCart ? itemInCart.quantity : 0;
+
+      let d = document.createElement("div");
+      d.className = "menu-item";
+      d.innerHTML = `
+        <img src="${i.image_url}" class="item-image">
+        <div class="item-name">${i.name}</div>
+        <div class="item-price">Rs ${i.price}</div>
+        <div class="${i.available ? 'status-available' : 'status-unavailable'}">
+          ${i.available ? 'Available' : 'Unavailable'}
+        </div>
+        <div class="controls">
+          <button onclick="decrement('${i.id}')" ${qty === 0 ? 'disabled' : ''}>−</button>
+          <span>${qty}</span>
+          <button onclick="increment('${i.id}','${i.name}',${i.price})" ${i.available ? '' : 'disabled'}>+</button>
+        </div>
+      `;
+      grid.appendChild(d);
+    });
+
+    menuContent.appendChild(s);
+  });
+
+  renderCart();
+}
+
+function increment(id,name,price){
+  let item = cart.find(i => i.id === id);
+  if(item) item.quantity++;
+  else cart.push({id,name,price,quantity:1});
+  renderMenu();
+}
+
+function decrement(id){
+  let item = cart.find(i => i.id === id);
+  if(item){
+    item.quantity--;
+    if(item.quantity === 0) cart = cart.filter(ci => ci.id !== id);
+  }
+  renderMenu();
+}
+
+function renderCart(){
+  let ul = document.getElementById("cartItems");
+  let total = 0;
+  ul.innerHTML = "";
+
+  cart.forEach(i => {
+    ul.innerHTML += `<li>${i.name} x ${i.quantity} – Rs ${i.price * i.quantity}</li>`;
+    total += i.price * i.quantity;
+  });
+
+  document.getElementById("totalAmount").textContent = total;
+  document.getElementById("prebookBtn").disabled = cart.length === 0;
+}
+
+function preBook(){
+  document.getElementById("paymentSection").style.display = "block";
+}
+
+/* 🔥 ONLY CHANGE IS HERE */
+function confirmPayment(){
+  let d = new Date();
+  let today = String(d.getDate()).padStart(2,'0')+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+d.getFullYear();
+
+  let total = cart.reduce((sum,i)=>sum+(i.price*i.quantity),0);
+  let orders = JSON.parse(localStorage.getItem("canteenOrders")) || [];
+
+  let todayOrders = orders.filter(o => o.date === today);
+  let tokenNo = String(todayOrders.length + 1).padStart(3,'0');
+  let orderId = `ORD-${tokenNo}`;
+
+  orders.push({orderId:orderId,items:cart,total,status:"Pending",date:today});
+  localStorage.setItem("canteenOrders",JSON.stringify(orders));
+
+  alert("Payment Successful ✅\nYour Order ID: " + orderId);
+
+  cart = [];
+  renderMenu();
+  document.getElementById("paymentSection").style.display = "none";
+}
+
+renderMenu();
+</script>
+</body>
+</html>
