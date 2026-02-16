@@ -1,13 +1,23 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
+import os
 from datetime import date
 
-app = Flask(__name__)
+# ---------------- APP CONFIG ---------------- #
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "canteen.db")
+
+app = Flask(
+    __name__,
+    template_folder="templates",
+    static_folder="static"
+)
 
 # ---------------- DATABASE ---------------- #
 
 def get_db():
-    conn = sqlite3.connect("canteen.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -25,29 +35,28 @@ def init_db():
         )
     """)
     db.commit()
+    db.close()
 
+# App start aagumbodhu DB create aagum
 init_db()
 
 # ---------------- PAGES ---------------- #
 
-# HOME PAGE
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# STUDENT PAGE
 @app.route("/student")
 def student():
     return render_template("student.html")
 
-# MANAGER LOGIN PAGE
 @app.route("/manager_login", methods=["GET", "POST"])
 def manager_login():
     error = None
     if request.method == "POST":
         password = request.form.get("password")
 
-        # ✅ Manager Password
+        # Demo password (college project)
         if password == "gtec12345":
             return redirect(url_for("manager"))
         else:
@@ -55,22 +64,19 @@ def manager_login():
 
     return render_template("manager_login.html", error=error)
 
-# MANAGER PAGE
 @app.route("/manager")
 def manager():
     return render_template("manager.html")
 
-# ORDERS PAGE
 @app.route("/orders")
 def orders():
     return render_template("orders.html")
 
 # ---------------- API ---------------- #
 
-# PLACE ORDER (Student side)
 @app.route("/place_order", methods=["POST"])
 def place_order():
-    data = request.json
+    data = request.get_json()
 
     order_id = data.get("orderId")
     items = str(data.get("items"))
@@ -85,15 +91,17 @@ def place_order():
     """, (order_id, items, total, "Pending", today))
 
     db.commit()
+    db.close()
+
     return jsonify({"success": True})
 
-# GET ALL ORDERS (Manager side)
 @app.route("/get_orders")
 def get_orders():
     db = get_db()
     c = db.cursor()
     c.execute("SELECT * FROM orders ORDER BY id DESC")
     rows = c.fetchall()
+    db.close()
 
     orders = []
     for r in rows:
@@ -107,21 +115,25 @@ def get_orders():
 
     return jsonify(orders)
 
-# UPDATE STATUS
 @app.route("/update_status", methods=["POST"])
 def update_status():
-    data = request.json
+    data = request.get_json()
     order_id = data.get("orderId")
     status = data.get("status")
 
     db = get_db()
     c = db.cursor()
-    c.execute("UPDATE orders SET status=? WHERE order_id=?", (status, order_id))
+    c.execute(
+        "UPDATE orders SET status=? WHERE order_id=?",
+        (status, order_id)
+    )
     db.commit()
+    db.close()
 
     return jsonify({"success": True})
 
 # ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))  # Hosting support
+    app.run(host="0.0.0.0", port=port, debug=False)
