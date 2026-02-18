@@ -9,13 +9,6 @@ body{
     background:#f4f4f4;
     padding:20px
 }
-.date-box{
-    background:#007bff;
-    color:#fff;
-    padding:10px;
-    border-radius:8px;
-    margin-top:20px;
-}
 .order{
     background:#fff;
     padding:12px;
@@ -30,6 +23,9 @@ body{
 .no-orders{
     margin-top:10px;
     color:#555
+}
+h2{
+    margin-bottom:15px;
 }
 </style>
 </head>
@@ -47,9 +43,13 @@ body{
 
 let lastOrderIds = [];
 
-// 🔓 Unlock sound after first click (browser autoplay fix)
+// 🔓 Unlock sound after first click (browser autoplay restriction fix)
 document.body.addEventListener("click", function(){
-    document.getElementById("orderSound").play().catch(()=>{});
+    const audio = document.getElementById("orderSound");
+    audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+    }).catch(()=>{});
 }, { once:true });
 
 function playSound(){
@@ -71,7 +71,7 @@ function renderOrders(){
             return;
         }
 
-        // 🔥 Detect new order by ID
+        // 🔥 Detect new order using orderId
         let currentIds = orders.map(o => o.orderId);
 
         if(lastOrderIds.length > 0){
@@ -89,9 +89,14 @@ function renderOrders(){
 
             let itemsHTML = "";
 
-            (o.items || []).forEach(i => {
-                itemsHTML += `<li>${i.name} x ${i.quantity}</li>`;
-            });
+            try {
+                let parsedItems = JSON.parse(o.items.replace(/'/g,'"'));
+                parsedItems.forEach(i => {
+                    itemsHTML += `<li>${i.name} x ${i.quantity}</li>`;
+                });
+            } catch(e){
+                itemsHTML = "<li>Error loading items</li>";
+            }
 
             div.innerHTML += `
             <div class="order">

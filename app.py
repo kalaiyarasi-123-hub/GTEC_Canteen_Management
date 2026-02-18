@@ -9,7 +9,7 @@ from datetime import date
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "canteen.db")
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__)
 
 # ---------------- DATABASE ---------------- #
 
@@ -34,7 +34,6 @@ def init_db():
     db.commit()
     db.close()
 
-# Create DB on startup
 init_db()
 
 # ---------------- PAGES ---------------- #
@@ -65,7 +64,7 @@ def manager():
     return render_template("manager.html")
 
 @app.route("/orders")
-def orders():
+def orders_page():
     return render_template("orders.html")
 
 # ---------------- API ---------------- #
@@ -82,18 +81,15 @@ def place_order():
     db = get_db()
     c = db.cursor()
 
-    # 🔥 Count today's orders
+    # Count today's orders
     c.execute("SELECT COUNT(*) FROM orders WHERE order_date=?", (today,))
     count = c.fetchone()[0]
 
-    # 🔢 Serial number (001, 002, 003...)
     serial_no = str(count + 1).zfill(3)
-
-    # 📅 Final Order ID (18-02-2026-001)
     order_id = f"{today}-{serial_no}"
 
-    items = json.dumps(data.get("items"))
-    total = data.get("total")
+    items = json.dumps(data.get("items", []))
+    total = data.get("total", 0)
 
     c.execute("""
         INSERT INTO orders (order_id, items, total, status, order_date)
@@ -118,9 +114,14 @@ def get_orders():
 
     orders = []
     for r in rows:
+        try:
+            items = json.loads(r["items"]) if r["items"] else []
+        except:
+            items = []
+
         orders.append({
             "orderId": r["order_id"],
-            "items": json.loads(r["items"]),
+            "items": items,
             "total": r["total"],
             "status": r["status"],
             "date": r["order_date"]
@@ -145,8 +146,9 @@ def update_status():
 
     return jsonify({"success": True})
 
+
 # ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)

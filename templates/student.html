@@ -168,40 +168,31 @@ function preBook(){
 
 /* 🔥 ONLY CHANGE IS HERE */
 function confirmPayment(){
-
-  if(cart.length === 0){
-      alert("Cart is empty ❌");
-      return;
-  }
-
+  let d = new Date();
+  let today = String(d.getDate()).padStart(2,'0')+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+d.getFullYear();
   let total = cart.reduce((sum,i)=>sum+(i.price*i.quantity),0);
 
+  let tokenNo = Math.floor(Math.random() * 1000).toString().padStart(3,'0');
+  let orderId = `ORD-${tokenNo}`;
+
   fetch("/place_order", {
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-          items: cart,
-          total: total
-      })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      orderId: orderId,
+      items: cart,
+      total: total
+    })
   })
   .then(res => res.json())
   .then(data => {
-      if(data.success){
-          alert("Payment Successful ✅\nYour Order ID: " + data.orderId);
-          cart = [];
-          renderMenu();
-          document.getElementById("paymentSection").style.display = "none";
-      } else {
-          alert("Something went wrong ❌");
-      }
-  })
-  .catch(err => {
-      alert("Server error ❌");
-      console.log(err);
+      alert("Payment Successful ✅\nYour Order ID: " + orderId);
+      cart = [];
+      renderMenu();
+      document.getElementById("paymentSection").style.display = "none";
   });
 }
+
 
 
 
