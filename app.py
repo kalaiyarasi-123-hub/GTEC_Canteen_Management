@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
 import os
+import json
 from datetime import date
 
 # ---------------- APP CONFIG ---------------- #
@@ -8,11 +9,7 @@ from datetime import date
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "canteen.db")
 
-app = Flask(
-    __name__,
-    template_folder="templates",
-    static_folder="static"
-)
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # ---------------- DATABASE ---------------- #
 
@@ -27,7 +24,7 @@ def init_db():
     c.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id TEXT,
+            order_id TEXT UNIQUE,
             items TEXT,
             total INTEGER,
             status TEXT,
@@ -37,7 +34,7 @@ def init_db():
     db.commit()
     db.close()
 
-# App start aagumbodhu DB create aagum
+# Create DB on startup
 init_db()
 
 # ---------------- PAGES ---------------- #
@@ -56,7 +53,6 @@ def manager_login():
     if request.method == "POST":
         password = request.form.get("password")
 
-        # Demo password (college project)
         if password == "gtec12345":
             return redirect(url_for("manager"))
         else:
@@ -78,13 +74,27 @@ def orders():
 def place_order():
     data = request.get_json()
 
-    order_id = data.get("orderId")
-    items = str(data.get("items"))
-    total = data.get("total")
+    if not data:
+        return jsonify({"success": False})
+
     today = date.today().strftime("%d-%m-%Y")
 
     db = get_db()
     c = db.cursor()
+
+    # 🔥 Count today's orders
+    c.execute("SELECT COUNT(*) FROM orders WHERE order_date=?", (today,))
+    count = c.fetchone()[0]
+
+    # 🔢 Serial number (001, 002, 003...)
+    serial_no = str(count + 1).zfill(3)
+
+    # 📅 Final Order ID (18-02-2026-001)
+    order_id = f"{today}-{serial_no}"
+
+    items = json.dumps(data.get("items"))
+    total = data.get("total")
+
     c.execute("""
         INSERT INTO orders (order_id, items, total, status, order_date)
         VALUES (?, ?, ?, ?, ?)
@@ -93,7 +103,10 @@ def place_order():
     db.commit()
     db.close()
 
-    return jsonify({"success": True})
+    return jsonify({
+        "success": True,
+        "orderId": order_id
+    })
 
 @app.route("/get_orders")
 def get_orders():
@@ -107,7 +120,7 @@ def get_orders():
     for r in rows:
         orders.append({
             "orderId": r["order_id"],
-            "items": r["items"],
+            "items": json.loads(r["items"]),
             "total": r["total"],
             "status": r["status"],
             "date": r["order_date"]
@@ -135,5 +148,5 @@ def update_status():
 # ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Hosting support
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
